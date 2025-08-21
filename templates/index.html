@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Općina Posedarje – Transkripcija zvuka</title>
+
+  <!-- Bootstrap (keeps forms accessible & responsive) -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+/>
+  <!-- Custom theme to match posedarje.hr -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-page">
+
+  <!-- Top bar -->
+  <header class="topbar shadow-sm">
+    <div class="container d-flex align-items-center justify-content-between py-2">
+      <a class="d-flex align-items-center text-decoration-none" href="/" aria-label="Naslovnica">
+        <img src="{{ url_for('static', filename='image/posedarje_grb.gif') }}"
+     alt="Grb Općine Posedarje" class="logo me-2" />
+        <div class="lh-1">
+          <div class="site-title fw-600">Općina Posedarje</div>
+          <div class="site-subtitle text-light-60">Transkripcija audio zapisa</div>
+        </div>
+      </a>
+      <div class="small text-light-60 d-none d-md-block">
+        Trg Martina Posedarskog 1
+      </div>
+    </div>
+  </header>
+
+    <!-- Page heading -->
+  <section class="py-5 hero-modern">
+    <div class="container">
+      <div class="d-flex align-items-center gap-3">
+        <span class="accent-bar"></span>
+        <h1 class="m-0 page-title">Pretvorite govor u tekst</h1>
+      </div>
+      <p class="mt-2 text-muted fs-6">
+        Učitajte audio, odaberite jezik i jednim klikom dobijte transkript. Brzo, jednostavno i sigurno.
+      </p>
+    </div>
+  </section>
+
+  <!-- Upload card -->
+  <section class="pb-4">
+    <div class="container">
+      <div class="card card-glass border-0">
+        <div class="card-body p-4 p-md-5">
+          <form id="form" class="row g-4">
+            <div class="col-12">
+  <label for="file" class="form-label fw-600">Audio datoteka</label>
+
+  <!-- Drag & Drop zone -->
+  <div id="dropzone" class="dropzone">
+    <div class="dz-inner">
+      <i class="bi bi-cloud-arrow-up"></i>
+      <div class="dz-title">Povucite datoteku ovdje</div>
+      <div class="dz-sub">ili kliknite za odabir (.mp3, .wav · do 50&nbsp;MB)</div>
+      <div id="fileName" class="dz-file mt-1"></div>
+    </div>
+    <!-- Hidden native input (still used under the hood) -->
+    <input class="visually-hidden" type="file" id="file" name="file" accept=".mp3,.wav" />
+  </div>
+
+  <div class="form-text">Podržano: MP3, WAV • Maksimalno 50&nbsp;MB</div>
+
+  <!-- Progress -->
+  <div class="progress mt-3 d-none" id="progressWrap" style="height: 8px;">
+    <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+  </div>
+</div>
+
+            <div class="col-md-6">
+              <label for="language" class="form-label fw-600">Jezik (opcionalno)</label>
+              <select id="language" name="language" class="form-select">
+                <option value="">Auto-detekcija</option>
+                <option value="hr">Hrvatski (hr)</option>
+                <option value="en">Engleski (en)</option>
+                <option value="de">Njemački (de)</option>
+                <option value="it">Talijanski (it)</option>
+                <option value="fr">Francuski (fr)</option>
+                <option value="es">Španjolski (es)</option>
+                <option value="pt">Portugalski (pt)</option>
+                <option value="pl">Poljski (pl)</option>
+                <option value="ru">Ruski (ru)</option>
+                <option value="uk">Ukrajinski (uk)</option>
+                <option value="tr">Turski (tr)</option>
+                <option value="ja">Japanski (ja)</option>
+                <option value="ko">Korejski (ko)</option>
+                <option value="zh">Kineski (zh)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label for="model" class="form-label fw-600">Model</label>
+              <select id="model" name="model" class="form-select">
+                <option value="gpt-4o-mini-transcribe" selected>gpt-4o-mini-transcribe (zadano)</option>
+                <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
+              </select>
+            </div>
+
+            <div class="col-12 d-flex align-items-center gap-3">
+              <button id="btn" class="btn btn-posedarje btn-lg px-4" type="submit">
+                Transkribiraj
+              </button>
+              <div class="spinner-border spinner-border-sm d-none" id="spinner" role="status" aria-hidden="true"></div>
+              <small id="helper" class="text-muted">Učitajte datoteku i kliknite “Transkribiraj”.</small>
+            </div>
+          </form>
+
+          <div id="error" class="alert alert-danger mt-4 d-none" role="alert"></div>
+
+          <div id="result" class="mt-5 d-none">
+  <div class="d-flex align-items-center mb-2">
+    <h5 class="mb-0 me-2">Transkript</h5>
+    <span class="badge bg-secondary-subtle text-secondary-emphasis" id="meta"></span>
+  </div>
+
+  <!-- textarea: click/cmd+A friendly, still read-only -->
+  <textarea id="output" class="transcript form-control" rows="10" readonly></textarea>
+
+  <div class="d-flex gap-2 mt-2">
+    <button id="copyBtn" class="btn btn-outline-dark">Kopiraj</button>
+    <button id="downloadBtn" class="btn btn-outline-posedarje">Preuzmi .txt</button>
+  </div>
+</div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="pb-5">
+    <div class="container">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <span class="accent-bar"></span>
+        <h2 class="m-0 h4 fw-600">Kako koristiti</h2>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="how-card">
+            <div class="how-step">1</div>
+            <div class="how-title">Učitajte audio</div>
+            <p class="how-text">Povucite i pustite ili odaberite <em>.mp3</em> / <em>.wav</em> datoteku do 50&nbsp;MB.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="how-card">
+            <div class="how-step">2</div>
+            <div class="how-title">Odaberite jezik</div>
+            <p class="how-text">Ostavite prazno za auto-detekciju ili ručno postavite npr. <strong>Hrvatski (hr)</strong>.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="how-card">
+            <div class="how-step">3</div>
+            <div class="how-title">Preuzmite tekst</div>
+            <p class="how-text">Kliknite <strong>Transkribiraj</strong>, zatim <em>Kopiraj</em> ili <em>Preuzmi .txt</em>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tips mt-3">
+        <strong>Savjeti:</strong> Za jasniji transkript koristite tiše okruženje i govorite blizu mikrofona.
+        Podržani formati: MP3, WAV. Privatnost: snimke se obrađuju isključivo za generiranje transkripta.
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="pb-5">
+    <div class="container">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <span class="accent-bar"></span>
+        <h2 class="m-0 h5 fw-600">Česta pitanja</h2>
+      </div>
+
+      <div class="accordion" id="faq">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q1">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a1">
+              Koliko traje transkripcija?
+            </button>
+          </h2>
+        </div>
+        <div id="a1" class="accordion-collapse collapse" data-bs-parent="#faq">
+          <div class="accordion-body">
+            Najčešće nekoliko sekundi, ovisno o duljini i kvaliteti audio zapisa.
+          </div>
+        </div>
+
+        <div class="accordion-item mt-2">
+          <h2 class="accordion-header" id="q2">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a2">
+              Hoće li aplikacija prepoznati dijalekt?
+            </button>
+          </h2>
+        </div>
+        <div id="a2" class="accordion-collapse collapse" data-bs-parent="#faq">
+          <div class="accordion-body">
+            Modeli dobro rade s različitim naglascima; odabir “Hrvatski (hr)” često pomaže točnosti.
+          </div>
+        </div>
+
+        <div class="accordion-item mt-2">
+          <h2 class="accordion-header" id="q3">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a3">
+              Što s većim datotekama?
+            </button>
+          </h2>
+        </div>
+        <div id="a3" class="accordion-collapse collapse" data-bs-parent="#faq">
+          <div class="accordion-body">
+            Trenutno je ograničenje 50&nbsp;MB po datoteci. Po potrebi ga možemo povećati.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+ <script>
+  // ===== Elements
+  const form = document.getElementById("form");
+  const spinner = document.getElementById("spinner");
+  const errorEl = document.getElementById("error");
+  const result = document.getElementById("result");
+  const meta = document.getElementById("meta");
+  const output = document.getElementById("output");
+  const copyBtn = document.getElementById("copyBtn");
+  const downloadBtn = document.getElementById("downloadBtn");
+  const btn = document.getElementById("btn");
+  const helper = document.getElementById("helper");
+
+  // Dropzone
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("file");
+  const fileName = document.getElementById("fileName");
+
+  // Progress
+  const progressWrap = document.getElementById("progressWrap");
+  const progressBar = document.getElementById("progressBar");
+
+  // Global overlay
+  const dragOverlay = document.getElementById("dragOverlay");
+
+  // ===== Config
+  const MAX_MB = 50;
+  const ALLOWED = ['audio/mpeg','audio/mp3','audio/wav','audio/x-wav'];
+
+  // ===== Helpers
+  const showError = (msg) => {
+    errorEl.textContent = msg;
+    errorEl.classList.remove("d-none");
+  };
+  const clearError = () => {
+    errorEl.textContent = "";
+    errorEl.classList.add("d-none");
+  };
+  const updateFileName = () => {
+    fileName.textContent = fileInput.files?.[0]?.name ? `Odabrano: ${fileInput.files[0].name}` : "";
+  };
+  const validateFile = (file) => {
+    if (!file) { showError("Molimo odaberite datoteku."); return false; }
+    const sizeMB = file.size / (1024*1024);
+    const typeOk = ALLOWED.includes(file.type) || /\.(mp3|wav)$/i.test(file.name);
+    if (!typeOk) { showError("Nepodržan format. Dozvoljeno: .mp3, .wav"); return false; }
+    if (sizeMB > MAX_MB) { showError(`Datoteka je prevelika (${sizeMB.toFixed(1)} MB). Maksimalno ${MAX_MB} MB.`); return false; }
+    return true;
+  };
+
+  // ===== Drag & Drop (zone)
+  dropzone.addEventListener("click", () => fileInput.click());
+  dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      fileInput.files = e.dataTransfer.files;
+      updateFileName();
+      clearError();
+    }
+  });
+  fileInput.addEventListener("change", () => { updateFileName(); clearError(); });
+
+  // ===== Global drag overlay (window highlight)
+  let dragCounter = 0;
+  window.addEventListener("dragenter", (e) => { e.preventDefault(); dragCounter++; dragOverlay.classList.remove("d-none"); });
+  window.addEventListener("dragleave", (e) => { dragCounter--; if (dragCounter<=0){ dragOverlay.classList.add("d-none"); dragCounter=0; } });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => { e.preventDefault(); dragOverlay.classList.add("d-none"); dragCounter=0; });
+
+  // ===== Submit with progress (XHR)
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    clearError();
+    result.classList.add("d-none");
+
+    const file = fileInput.files?.[0];
+    if (!validateFile(file)) return;
+
+    spinner.classList.remove("d-none");
+    btn.disabled = true; helper.textContent = "Obrada u tijeku…";
+
+    progressWrap.classList.remove("d-none");
+    progressBar.style.width = "0%";
+
+    const formData = new FormData(form);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/transcribe");
+
+    xhr.upload.addEventListener("progress", (evt) => {
+      if (evt.lengthComputable) {
+        const pct = Math.round((evt.loaded / evt.total) * 100);
+        progressBar.style.width = pct + "%";
+      }
+    });
+
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && json.ok) {
+          output.value = json.text || "";
+          meta.textContent = `${json.model}${json.language ? " • " + json.language : ""}`;
+          result.classList.remove("d-none");
+          helper.textContent = "Gotovo.";
+        } else {
+          throw new Error(json.error || "Neuspjela transkripcija.");
+        }
+      } catch (err) {
+        showError(err.message || "Došlo je do pogreške.");
+        helper.textContent = "Pokušajte ponovno.";
+      } finally {
+        spinner.classList.add("d-none");
+        btn.disabled = false;
+        setTimeout(() => { progressWrap.classList.add("d-none"); }, 500);
+      }
+    };
+
+    xhr.onerror = () => {
+      showError("Mrežna pogreška.");
+      spinner.classList.add("d-none");
+      btn.disabled = false;
+      setTimeout(() => { progressWrap.classList.add("d-none"); }, 500);
+    };
+
+    xhr.send(formData);
+  });
+
+  // ===== Copy / Download
+  copyBtn?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(output.value || "");
+      copyBtn.textContent = "Kopirano!";
+      setTimeout(() => (copyBtn.textContent = "Kopiraj"), 1200);
+    } catch (_) {}
+  });
+
+  downloadBtn?.addEventListener("click", () => {
+    const blob = new Blob([output.value || ""], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "transkript.txt"; a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+
+
+    <!-- Footer -->
+  <footer class="footer mt-5">
+    <div class="container py-5">
+      <div class="row g-4">
+        
+        <!-- Left column: Logo + contact -->
+        <div class="col-md-4">
+          <img src="{{ url_for('static', filename='image/posedarje_grb.gif') }}"
+               alt="Grb Općine Posedarje" class="footer-logo mb-3" />
+          <ul class="list-unstyled small text-light-60">
+            <li class="mb-2">
+              <i class="bi bi-geo-alt me-2"></i>
+              Trg Martina Posedarskog 1, 23242 Posedarje
+            </li>
+            <li class="mb-2">
+              <i class="bi bi-telephone me-2"></i>
+              023/266-180
+            </li>
+            <li class="mb-2">
+              <i class="bi bi-envelope me-2"></i>
+              info@opcina-posedarje.hr
+            </li>
+          </ul>
+        </div>
+
+        <!-- Middle column: Links -->
+        <div class="col-md-4">
+          <ul class="list-unstyled fw-600">
+            <li class="mb-2"><a href="#" class="footer-link">Javna nabava</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Službeni glasnik</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Natječaji i javni pozivi</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Savjetovanja s javnošću</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Transparentnost</a></li>
+          </ul>
+        </div>
+
+        <!-- Right column: Links -->
+        <div class="col-md-4">
+          <ul class="list-unstyled fw-600">
+            <li class="mb-2"><a href="#" class="footer-link">Zaštita okoliša</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Civilna zaštita</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">TZP Novigradsko more</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Zadarska županija</a></li>
+            <li class="mb-2"><a href="#" class="footer-link">Izjava o pristupačnosti</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+<!-- Global drag overlay -->
+<div id="dragOverlay" class="drag-overlay d-none">
+  <div class="drag-overlay-inner">
+    <i class="bi bi-cloud-arrow-up"></i>
+    <div>Pustite datoteku za prijenos</div>
+  </div>
+</div>
+
+<!-- keep Bootstrap JS and your existing script(s) above this line -->
+
+</body>
+</html>

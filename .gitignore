@@ -1,0 +1,11 @@
+# Python venv
+.venv/
+__pycache__/
+*.pyc
+
+# Env varijable
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
